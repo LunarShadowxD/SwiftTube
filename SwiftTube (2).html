@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SwiftTube</title>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:#0f0f0f;
+  color:white;
+  font-family:-apple-system,"SF Pro Text",sans-serif;
+  display:flex;
+}
+#sidebar{
+  width:220px;
+  background:#121212;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  padding:10px 8px;
+  position:sticky;
+  top:0;
+  overflow-y:auto;
+}
+#sidebar h4{
+  color:#aaa;font-size:11px;letter-spacing:1px;
+  padding:10px 8px 4px;margin:0;
+}
+#sidebar button{
+  background:none;border:none;color:white;
+  text-align:left;padding:9px 12px;
+  display:flex;gap:10px;cursor:pointer;
+  border-radius:8px;align-items:center;
+  font-size:14px;width:100%;
+}
+#sidebar button:hover{background:#272727;}
+#main{flex:1;overflow-y:auto;height:100vh;}
+header{
+  display:flex;gap:10px;padding:10px 14px;
+  background:#181818;
+  position:sticky;top:0;z-index:10;
+  align-items:center;
+}
+header h2{margin:0;white-space:nowrap;font-size:18px;color:#ff3b30;}
+.searchWrap{flex:1;display:flex;gap:6px;}
+input{
+  flex:1;padding:8px 14px;border:none;
+  border-radius:20px;background:#272727;
+  color:white;outline:none;font-size:14px;
+}
+#lunaBtn{
+  background:#ff3b30;border:none;
+  border-radius:12px;color:white;
+  padding:8px 14px;cursor:pointer;
+  display:flex;align-items:center;gap:6px;
+  font-size:13px;white-space:nowrap;
+}
+#quotaBanner{
+  display:none;
+  background:#2a1a00;
+  border-left:3px solid #ff9500;
+  color:#ffcc80;
+  padding:10px 16px;
+  font-size:13px;
+  align-items:center;
+  gap:8px;
+}
+#videos{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:16px;padding:16px;
+}
+.video img{
+  width:100%;border-radius:12px;cursor:pointer;
+  display:block;aspect-ratio:16/9;object-fit:cover;
+  background:#1a1a1a;
+}
+.video{cursor:pointer;}
+.video:hover img{opacity:0.82;transition:opacity 0.18s;}
+.video h3{font-size:14px;margin:6px 0 2px;line-height:1.35;}
+.video p{font-size:12px;color:#aaa;margin:0;}
+.video .meta{font-size:11px;color:#666;margin-top:2px;}
+#watchPage{display:none;padding:20px;}
+#backBtn{
+  background:#272727;border:none;color:white;
+  padding:8px 14px;border-radius:8px;cursor:pointer;
+  margin-bottom:12px;display:inline-flex;align-items:center;gap:6px;
+}
+#playerWrap{width:100%;}
+iframe{width:100%;height:520px;border:none;border-radius:12px;}
+#playerError{
+  display:none;
+  background:#1a1a1a;border-radius:12px;height:520px;
+  align-items:center;justify-content:center;
+  flex-direction:column;gap:14px;text-align:center;padding:20px;
+}
+#playerError a{
+  background:#ff0000;color:white;
+  padding:10px 22px;border-radius:8px;
+  text-decoration:none;font-weight:600;
+}
+.spinner{
+  width:36px;height:36px;
+  border:3px solid #333;border-top-color:#ff3b30;
+  border-radius:50%;animation:spin 0.7s linear infinite;
+  margin:40px auto;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Luna */
+#lunaWindow{
+  position:fixed;right:20px;bottom:20px;
+  width:340px;background:#1f1f1f;
+  border-radius:14px;display:none;flex-direction:column;
+  box-shadow:0 8px 32px rgba(0,0,0,0.6);z-index:100;
+}
+.lunaHeader{
+  background:#2a2a2a;padding:12px 14px;
+  display:flex;justify-content:space-between;align-items:center;
+  border-radius:14px 14px 0 0;font-weight:600;
+}
+#closeLuna{background:none;border:none;color:#aaa;font-size:16px;cursor:pointer;padding:2px 6px;}
+#closeLuna:hover{color:white;}
+#lunaMessages{
+  height:220px;overflow-y:auto;padding:12px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.luna-msg{
+  padding:8px 12px;border-radius:10px;
+  font-size:13px;line-height:1.5;word-break:break-word;
+}
+.luna-msg.user{background:#272727;align-self:flex-end;max-width:85%;}
+.luna-msg.bot{background:#2a2a3a;align-self:flex-start;max-width:90%;}
+.luna-msg b{display:block;font-size:11px;margin-bottom:3px;color:#aaa;}
+#lunaInputRow{display:flex;padding:10px;gap:6px;}
+#lunaText{border-radius:20px;padding:8px 14px;font-size:13px;}
+#sendLuna{
+  background:#ff3b30;border:none;color:white;
+  border-radius:10px;padding:8px 14px;cursor:pointer;
+  white-space:nowrap;font-size:13px;
+}
+.empty-state{
+  padding:60px 20px;text-align:center;color:#555;
+  grid-column:1/-1;line-height:1.8;
+}
+#recBox h3{margin:20px 0 10px;font-size:16px;}
+.rec-item{
+  cursor:pointer;padding:10px;border-radius:8px;
+  display:flex;gap:10px;align-items:flex-start;
+}
+.rec-item:hover{background:#1f1f1f;}
+.rec-thumb{
+  width:120px;min-width:120px;height:68px;
+  border-radius:6px;object-fit:cover;background:#1a1a1a;
+}
+.rec-info p{margin:0;font-size:13px;line-height:1.35;}
+.rec-info span{font-size:11px;color:#aaa;}
+</style>
+</head>
+<body>
+
+<aside id="sidebar">
+  <h4>MENU</h4>
+  <button onclick="changeSection('trending')"><i data-lucide="home"></i> Home</button>
+  <button onclick="changeSection('music')"><i data-lucide="music"></i> Music</button>
+  <button onclick="changeSection('gaming')"><i data-lucide="gamepad-2"></i> Gaming</button>
+  <button onclick="changeSection('news')"><i data-lucide="newspaper"></i> News</button>
+  <button onclick="changeSection('sports')"><i data-lucide="trophy"></i> Sports</button>
+  <button onclick="changeSection('technology')"><i data-lucide="cpu"></i> Technology</button>
+  <button onclick="changeSection('comedy')"><i data-lucide="smile"></i> Comedy</button>
+  <h4>YOU</h4>
+  <button onclick="openYou()"><i data-lucide="history"></i> Watch History</button>
+</aside>
+
+<div id="main">
+  <header>
+    <h2>SwiftTube</h2>
+    <div class="searchWrap">
+      <input id="search" placeholder="Search SwiftTube...">
+      <button id="lunaBtn"><i data-lucide="sparkles"></i> Luna</button>
+    </div>
+  </header>
+
+  <div id="quotaBanner">
+    &#9888;&nbsp; YouTube API quota reached. Showing results via backup source. Results may differ slightly.
+  </div>
+
+  <div id="videos"></div>
+
+  <div id="watchPage">
+    <button id="backBtn" onclick="goHome()"><i data-lucide="arrow-left"></i> Back</button>
+    <div id="playerWrap">
+      <iframe id="player" allowfullscreen></iframe>
+      <div id="playerError">
+        <p style="font-size:18px;margin:0">&#9888; This video can't be embedded</p>
+        <p style="color:#aaa;margin:0;font-size:14px">The video owner has disabled external playback.<br>You can still watch it directly on YouTube.</p>
+        <a id="watchOnYT" href="#" target="_blank">Watch on YouTube &#x2197;</a>
+      </div>
+    </div>
+    <h2 id="watchTitle" style="margin:16px 0 4px;"></h2>
+    <p id="watchChannel" style="color:#aaa;margin:0 0 20px;font-size:14px;"></p>
+    <div id="recBox"></div>
+  </div>
+</div>
+
+<!-- Luna AI -->
+<div id="lunaWindow">
+  <div class="lunaHeader">
+    &#10024; Luna AI
+    <button id="closeLuna">&#x2715;</button>
+  </div>
+  <div id="lunaMessages"></div>
+  <div id="lunaInputRow">
+    <input id="lunaText" placeholder="Ask Luna anything...">
+    <button id="sendLuna">Send</button>
+  </div>
+</div>
+
+<script>
+lucide.createIcons();
+
+const YT_KEY     = "AIzaSyDkPYpomK6jwiVnhVdCcigVt-Nq98wgTpw";
+const GEMINI_KEY = "AIzaSyBCKYcdvMV_mMVev52mNfEKqDBa_h0kaCY";
+
+// ─── Quota-free Piped instances (public, no key needed) ───────────────────────
+// Piped is an open-source YouTube front-end with a public API
+const PIPED_INSTANCES = [
+  "https://pipedapi.kavin.rocks",
+  "https://api.piped.yt",
+  "https://piped-api.garudalinux.org"
+];
+
+let query        = "trending";
+let quotaHit     = false;
+let pipedCursor  = "";     // for pagination via Piped
+let ytNextToken  = "";     // for pagination via YT API
+let activeSource = "piped"; // "piped" | "ytapi"
+
+const videosEl   = document.getElementById("videos");
+const quotaBanner = document.getElementById("quotaBanner");
+
+/* ═══════════════════════════════════════════════════════
+   NORMALISE — convert any source's item into one format
+   { videoId, title, channel, thumb }
+   ═══════════════════════════════════════════════════════ */
+function normYT(v) {
+  return {
+    videoId : v.id?.videoId,
+    title   : v.snippet?.title   || "",
+    channel : v.snippet?.channelTitle || "",
+    thumb   : v.snippet?.thumbnails?.medium?.url || `https://i.ytimg.com/vi/${v.id?.videoId}/mqdefault.jpg`
+  };
+}
+function normPiped(v) {
+  // Piped returns url like "/watch?v=XXXX"
+  const id = (v.url || "").replace("/watch?v=","").split("&")[0];
+  return {
+    videoId : id,
+    title   : v.title   || "",
+    channel : v.uploaderName || "",
+    thumb   : v.thumbnail || `https://i.ytimg.com/vi/${id}/mqdefault.jpg`
+  };
+}
+
+/* ═══════════════════════════════════════════════════════
+   PIPED SEARCH — quota-free
+   ═══════════════════════════════════════════════════════ */
+async function searchViaPiped(q, nextpage = "") {
+  for (const base of PIPED_INSTANCES) {
+    try {
+      const url = nextpage
+        ? `${base}/nextpage/search?q=${encodeURIComponent(q)}&nextpage=${encodeURIComponent(nextpage)}&filter=videos`
+        : `${base}/search?q=${encodeURIComponent(q)}&filter=videos`;
+      const res  = await fetch(url, { signal: AbortSignal.timeout(6000) });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const items = (data.items || []).filter(x => x.type === "stream" || x.url?.includes("/watch"));
+      return { items: items.map(normPiped), nextpage: data.nextpage || "" };
+    } catch(_) { continue; }
+  }
+  return null;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PIPED TRENDING — quota-free
+   ═══════════════════════════════════════════════════════ */
+async function trendingViaPiped() {
+  for (const base of PIPED_INSTANCES) {
+    try {
+      const res  = await fetch(`${base}/trending?region=US`, { signal: AbortSignal.timeout(6000) });
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (!Array.isArray(data)) continue;
+      return { items: data.slice(0,24).map(normPiped), nextpage: "" };
+    } catch(_) { continue; }
+  }
+  return null;
+}
+
+/* ═══════════════════════════════════════════════════════
+   YT DATA API — fallback (uses quota)
+   ═══════════════════════════════════════════════════════ */
+async function searchViaYTAPI(q, pageToken = "") {
+  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=16&q=${encodeURIComponent(q)}&pageToken=${pageToken}&key=${YT_KEY}`;
+  const res  = await fetch(url);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return {
+    items    : (data.items || []).filter(v => v.id?.videoId).map(normYT),
+    nextToken: data.nextPageToken || ""
+  };
+}
+
+/* ═══════════════════════════════════════════════════════
+   MAIN LOAD — tries Piped first, falls back to YT API
+   ═══════════════════════════════════════════════════════ */
+async function loadVideos(reset = false) {
+  if (reset) {
+    videosEl.innerHTML = `<div class="spinner"></div>`;
+    pipedCursor = "";
+    ytNextToken = "";
+  }
+
+  let items = [], nextRef = "";
+
+  // ── Try Piped first (no quota) ──
+  if (!quotaHit || activeSource === "piped") {
+    try {
+      let result;
+      if (query === "trending" && !pipedCursor) {
+        result = await trendingViaPiped();
+      } else {
+        result = await searchViaPiped(query, pipedCursor);
+      }
+      if (result && result.items.length > 0) {
+        activeSource = "piped";
+        items   = result.items;
+        nextRef = result.nextpage;
+        quotaBanner.style.display = "none";
+      }
+    } catch(_) {}
+  }
+
+  // ── Fall back to YT API if Piped failed ──
+  if (items.length === 0) {
+    try {
+      const result = await searchViaYTAPI(query, ytNextToken);
+      activeSource = "ytapi";
+      items   = result.items;
+      nextRef = result.nextToken;
+      quotaBanner.style.display = "none";
+    } catch(err) {
+      // Both sources failed
+      if (reset) {
+        const isQuota = err.message?.toLowerCase().includes("quota");
+        quotaHit = isQuota;
+        if (isQuota) quotaBanner.style.display = "flex";
+        videosEl.innerHTML = `<div class="empty-state">
+          &#9888; ${isQuota
+            ? "YouTube API quota exceeded and backup source unavailable.<br>Please try again after midnight Pacific Time when quota resets."
+            : "Could not load videos. Check your internet connection and try again."}
+        </div>`;
+      }
+      return;
+    }
+  }
+
+  // Store next pagination ref
+  if (activeSource === "piped") pipedCursor = nextRef;
+  else ytNextToken = nextRef;
+
+  // Clear spinner / append
+  if (reset) videosEl.innerHTML = "";
+
+  if (items.length === 0) {
+    videosEl.innerHTML = `<div class="empty-state">No results found for "<b>${escapeHtml(query)}</b>"</div>`;
+    return;
+  }
+
+  items.forEach(v => {
+    if (!v.videoId) return;
+    const div = document.createElement("div");
+    div.className = "video";
+    div.innerHTML = `
+      <img src="${escapeHtml(v.thumb)}" alt="${escapeHtml(v.title)}"
+           onerror="this.src='https://i.ytimg.com/vi/${v.videoId}/mqdefault.jpg'">
+      <h3>${escapeHtml(v.title)}</h3>
+      <p>${escapeHtml(v.channel)}</p>`;
+    div.onclick = () => openWatch(v);
+    videosEl.appendChild(div);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   WATCH PAGE
+   ═══════════════════════════════════════════════════════ */
+let currentVideoId = "";
+
+function openWatch(v) {
+  currentVideoId = v.videoId;
+  videosEl.style.display = "none";
+  const wp = document.getElementById("watchPage");
+  wp.style.display = "block";
+
+  const iframe   = document.getElementById("player");
+  const errorDiv = document.getElementById("playerError");
+
+  iframe.style.display  = "block";
+  errorDiv.style.display = "none";
+  iframe.src = `https://www.youtube.com/embed/${v.videoId}?autoplay=1`;
+
+  document.getElementById("watchOnYT").href    = `https://www.youtube.com/watch?v=${v.videoId}`;
+  document.getElementById("watchTitle").innerText   = v.title   || "";
+  document.getElementById("watchChannel").innerText = v.channel || "";
+
+  saveHistory(v);
+  loadRecommended(v.title);
+  lucide.createIcons();
+}
+
+// Detect embed errors via postMessage
+window.addEventListener("message", e => {
+  try {
+    const d = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+    if (d?.event === "onError" || (d?.event === "infoDelivery" && d?.info?.error)) {
+      document.getElementById("player").style.display    = "none";
+      document.getElementById("playerError").style.display = "flex";
+    }
+  } catch(_) {}
+});
+
+function goHome() {
+  document.getElementById("watchPage").style.display = "none";
+  document.getElementById("player").src = ""; // stop playback
+  videosEl.style.display = "grid";
+}
+
+/* ═══════════════════════════════════════════════════════
+   RECOMMENDED  (Piped → YT API fallback)
+   ═══════════════════════════════════════════════════════ */
+async function loadRecommended(q) {
+  const box = document.getElementById("recBox");
+  box.innerHTML = "<h3>Recommended</h3>";
+
+  let items = [];
+
+  // Try Piped
+  try {
+    const res = await searchViaPiped(q);
+    if (res && res.items.length) items = res.items.slice(0, 8);
+  } catch(_) {}
+
+  // Fallback YT API
+  if (!items.length) {
+    try {
+      const res = await searchViaYTAPI(q);
+      items = res.items.slice(0, 8);
+    } catch(_) {}
+  }
+
+  items.forEach(v => {
+    if (!v.videoId) return;
+    const d = document.createElement("div");
+    d.className = "rec-item";
+    d.innerHTML = `
+      <img class="rec-thumb" src="${escapeHtml(v.thumb)}"
+           onerror="this.src='https://i.ytimg.com/vi/${v.videoId}/mqdefault.jpg'">
+      <div class="rec-info">
+        <p>${escapeHtml(v.title)}</p>
+        <span>${escapeHtml(v.channel)}</span>
+      </div>`;
+    d.onclick = () => openWatch(v);
+    box.appendChild(d);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   INFINITE SCROLL
+   ═══════════════════════════════════════════════════════ */
+document.getElementById("main").addEventListener("scroll", () => {
+  const el = document.getElementById("main");
+  const canPage = activeSource === "piped" ? !!pipedCursor : !!ytNextToken;
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 400
+      && videosEl.style.display !== "none" && canPage) {
+    loadVideos(false);
+  }
+});
+
+/* ═══════════════════════════════════════════════════════
+   SEARCH & SECTIONS
+   ═══════════════════════════════════════════════════════ */
+document.getElementById("search").addEventListener("keypress", e => {
+  if (e.key === "Enter" && e.target.value.trim()) {
+    query = e.target.value.trim();
+    videosEl.style.display = "grid";
+    document.getElementById("watchPage").style.display = "none";
+    loadVideos(true);
+  }
+});
+
+function changeSection(s) {
+  query = s;
+  document.getElementById("search").value = "";
+  videosEl.style.display = "grid";
+  document.getElementById("watchPage").style.display = "none";
+  loadVideos(true);
+}
+
+/* ═══════════════════════════════════════════════════════
+   HISTORY
+   ═══════════════════════════════════════════════════════ */
+function saveHistory(v) {
+  let h = JSON.parse(localStorage.getItem("swifttube_history") || "[]");
+  h = h.filter(x => x.videoId !== v.videoId);
+  h.unshift(v);
+  localStorage.setItem("swifttube_history", JSON.stringify(h.slice(0, 60)));
+}
+
+function openYou() {
+  videosEl.innerHTML = "";
+  videosEl.style.display = "grid";
+  document.getElementById("watchPage").style.display = "none";
+  const history = JSON.parse(localStorage.getItem("swifttube_history") || "[]");
+  if (history.length === 0) {
+    videosEl.innerHTML = `<div class="empty-state">No watch history yet.<br>Start watching some videos!</div>`;
+    return;
+  }
+  history.forEach(v => {
+    const d = document.createElement("div");
+    d.className = "video";
+    d.innerHTML = `
+      <img src="${escapeHtml(v.thumb)}" alt=""
+           onerror="this.src='https://i.ytimg.com/vi/${v.videoId}/mqdefault.jpg'">
+      <h3>${escapeHtml(v.title)}</h3>
+      <p>${escapeHtml(v.channel)}</p>`;
+    d.onclick = () => openWatch(v);
+    videosEl.appendChild(d);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   LUNA AI  (tries 4 Gemini models automatically)
+   ═══════════════════════════════════════════════════════ */
+const lunaWin = document.getElementById("lunaWindow");
+document.getElementById("lunaBtn").onclick    = () => { lunaWin.style.display = "flex"; };
+document.getElementById("closeLuna").onclick  = () => { lunaWin.style.display = "none"; };
+document.getElementById("sendLuna").onclick   = sendLunaMessage;
+document.getElementById("lunaText").addEventListener("keypress", e => {
+  if (e.key === "Enter") sendLunaMessage();
+});
+
+async function sendLunaMessage() {
+  const input = document.getElementById("lunaText");
+  const msg   = input.value.trim();
+  if (!msg) return;
+  input.value = "";
+  addMsg("You", msg, "user");
+  const thinking = addMsg("Luna", "Thinking...", "bot");
+
+  const MODELS = [
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-latest",
+    "gemini-pro"
+  ];
+
+  let reply = null;
+  for (const model of MODELS) {
+    try {
+      const res  = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`,
+        { method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ contents:[{ parts:[{ text: msg }] }] }) }
+      );
+      const data = await res.json();
+      if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        reply = data.candidates[0].content.parts[0].text;
+        break;
+      }
+      // If error is not "model not found", stop trying
+      const errMsg = data.error?.message || "";
+      if (errMsg && !errMsg.includes("not found") && !errMsg.includes("deprecated")) {
+        reply = "&#9888; " + errMsg;
+        break;
+      }
+    } catch(_) {}
+  }
+
+  if (!reply) reply = "&#9888; Luna is unavailable right now. Make sure the Gemini API is enabled at console.cloud.google.com.";
+  thinking.innerHTML = `<b>Luna</b>${reply}`;
+
+  const msgs = document.getElementById("lunaMessages");
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addMsg(name, text, role) {
+  const d   = document.createElement("div");
+  d.className = `luna-msg ${role}`;
+  d.innerHTML = `<b>${escapeHtml(name)}</b>${role === "bot" ? text : escapeHtml(text)}`;
+  const msgs = document.getElementById("lunaMessages");
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
+  return d;
+}
+
+/* ═══════════════════════════════════════════════════════
+   UTILITY
+   ═══════════════════════════════════════════════════════ */
+function escapeHtml(s) {
+  if (!s) return "";
+  return String(s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+/* ── INIT ── */
+loadVideos(true);
+</script>
+</body>
+</html>
